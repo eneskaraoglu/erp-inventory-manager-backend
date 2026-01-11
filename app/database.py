@@ -54,8 +54,8 @@ def init_db():
     Like Hibernate's hbm2ddl.auto=update
     """
     # Import models so SQLAlchemy knows about them
-    from app.models import product_model, customer_model
-    
+    from app.models import product_model, customer_model, user_model
+
     # Create tables
     Base.metadata.create_all(bind=engine)
-    print(f"✅ Database initialized at: {DATABASE_PATH}")
+    print(f"Database initialized at: {DATABASE_PATH}")

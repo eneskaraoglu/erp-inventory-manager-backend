@@ -2,10 +2,12 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
-from app.routers import products, customers
+from app.routers import products, customers, users
 from app.database import init_db, SessionLocal
 from app.models.product_model import ProductModel
 from app.models.customer_model import CustomerModel
+from app.models.user_model import UserModel
+import hashlib
 
 
 def seed_data():
@@ -17,7 +19,7 @@ def seed_data():
     try:
         # Check if products exist
         if db.query(ProductModel).count() == 0:
-            print("📦 Seeding products...")
+            print("Seeding products...")
             products_data = [
                 ProductModel(name="Laptop", description="High-performance laptop", price=999.99, stock=50, category="Electronics"),
                 ProductModel(name="Mouse", description="Wireless mouse", price=29.99, stock=100, category="Accessories"),
@@ -26,11 +28,11 @@ def seed_data():
             ]
             db.add_all(products_data)
             db.commit()
-            print(f"✅ Added {len(products_data)} products")
+            print(f"Added {len(products_data)} products")
 
         # Check if customers exist
         if db.query(CustomerModel).count() == 0:
-            print("👥 Seeding customers...")
+            print("Seeding customers...")
             customers_data = [
                 CustomerModel(name="John Doe", email="john@example.com", phone="+1234567890", address="123 Main St, New York, NY", company="Acme Corp"),
                 CustomerModel(name="Jane Smith", email="jane@example.com", phone="+0987654321", address="456 Oak Ave, Los Angeles, CA", company="Tech Solutions"),
@@ -38,7 +40,40 @@ def seed_data():
             ]
             db.add_all(customers_data)
             db.commit()
-            print(f"✅ Added {len(customers_data)} customers")
+            print(f"Added {len(customers_data)} customers")
+
+        # Check if users exist
+        if db.query(UserModel).count() == 0:
+            print("Seeding users...")
+            users_data = [
+                UserModel(
+                    username="admin",
+                    email="admin@example.com",
+                    password_hash=hashlib.sha256("admin123".encode()).hexdigest(),
+                    full_name="Admin User",
+                    role="admin",
+                    is_active=True
+                ),
+                UserModel(
+                    username="manager",
+                    email="manager@example.com",
+                    password_hash=hashlib.sha256("manager123".encode()).hexdigest(),
+                    full_name="Manager User",
+                    role="manager",
+                    is_active=True
+                ),
+                UserModel(
+                    username="johndoe",
+                    email="john.user@example.com",
+                    password_hash=hashlib.sha256("password123".encode()).hexdigest(),
+                    full_name="John Doe",
+                    role="user",
+                    is_active=True
+                ),
+            ]
+            db.add_all(users_data)
+            db.commit()
+            print(f"Added {len(users_data)} users")
     finally:
         db.close()
 
@@ -50,12 +85,12 @@ async def lifespan(app: FastAPI):
     Like @PostConstruct and @PreDestroy in Spring
     """
     # Startup
-    print("🚀 Starting ERP Inventory Manager API...")
+    print("Starting ERP Inventory Manager API...")
     init_db()
     seed_data()
     yield
     # Shutdown
-    print("👋 Shutting down...")
+    print("Shutting down...")
 
 
 app = FastAPI(
@@ -84,6 +119,7 @@ app.add_middleware(
 # Include routers
 app.include_router(products.router, prefix="/api", tags=["Products"])
 app.include_router(customers.router, prefix="/api", tags=["Customers"])
+app.include_router(users.router, prefix="/api", tags=["Users"])
 
 
 @app.get("/")
