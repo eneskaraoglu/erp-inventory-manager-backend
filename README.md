@@ -1,3 +1,8 @@
+python -m venv venv
+.\venv\Scripts\activate
+pip install -r requirements.txt
+python run.py   
+
 # ERP Inventory Manager - Backend API
 
 FastAPI backend for the ERP Inventory Management System with **SQLite database**.

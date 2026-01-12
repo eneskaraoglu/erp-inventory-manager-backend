@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
-from app.routers import products, customers, users
+from app.routers import products, customers, users, auth
 from app.database import init_db, SessionLocal
 from app.models.product_model import ProductModel
 from app.models.customer_model import CustomerModel
@@ -117,6 +117,7 @@ app.add_middleware(
 )
 
 # Include routers
+app.include_router(auth.router, prefix="/api", tags=["Authentication"])  # Auth first!
 app.include_router(products.router, prefix="/api", tags=["Products"])
 app.include_router(customers.router, prefix="/api", tags=["Customers"])
 app.include_router(users.router, prefix="/api", tags=["Users"])
