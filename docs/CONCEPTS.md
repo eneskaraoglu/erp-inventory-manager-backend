@@ -8,17 +8,15 @@
 
 | Java/Swing | React | Notes |
 |------------|-------|-------|
-| JPanel class | Function Component | Both are reusable UI units |
-| Constructor params | Props | Data passed from parent |
-| Class fields | useState | Mutable component data |
-| PropertyChangeListener | useState setter | Triggers UI update |
-| componentDidMount | useEffect(() => {}, []) | Runs once on mount |
-| componentDidUpdate | useEffect(() => {}, [deps]) | Runs when deps change |
+| JPanel class | Function Component | Reusable UI units |
+| Constructor params | Props | Data from parent |
+| Class fields | useState | Mutable state |
+| PropertyChangeListener | useState setter | Triggers re-render |
+| componentDidMount | useEffect(() => {}, []) | Runs on mount |
 | ActionListener | onClick, onChange | Event handlers |
 | for loop + add() | .map() + JSX | Rendering lists |
-| if/else for visibility | Conditional rendering | `{show && <Component />}` |
 | Servlet URL mapping | React Router | URL → Component |
-| Command Pattern | useReducer | Action-based state changes |
+| Command Pattern | useReducer | Action-based state |
 | Component reference | useRef | DOM access |
 | Bean Validation | Zod | Form validation |
 | HttpClient | fetch() | API calls |
@@ -27,84 +25,54 @@
 
 ## Hook Rules 📜
 
-1. **Only call hooks at top level**
-   ```tsx
-   // ❌ WRONG
-   if (condition) {
-     const [state, setState] = useState()
-   }
-   
-   // ✅ CORRECT
-   const [state, setState] = useState()
-   if (condition) { /* use state */ }
-   ```
-
-2. **Only call hooks in React functions**
-   ```tsx
-   // ❌ WRONG - regular function
-   function helper() {
-     const [state, setState] = useState()
-   }
-   
-   // ✅ CORRECT - React component
-   function MyComponent() {
-     const [state, setState] = useState()
-   }
-   ```
+1. **Only call hooks at top level** - Never in conditions/loops
+2. **Only call hooks in React functions** - Components or custom hooks
 
 ---
 
 ## useState Patterns
 
-### Basic
 ```tsx
+// Basic
 const [count, setCount] = useState(0)
-setCount(5)           // Set to 5
-setCount(c => c + 1)  // Increment (use prev value)
-```
+setCount(5)
+setCount(c => c + 1)
 
-### With Object
-```tsx
+// Object
 const [user, setUser] = useState({ name: '', age: 0 })
-setUser({ ...user, name: 'John' })  // Spread to keep other fields
-```
+setUser({ ...user, name: 'John' })
 
-### With Array
-```tsx
+// Array
 const [items, setItems] = useState([])
-setItems([...items, newItem])       // Add item
-setItems(items.filter(i => i.id !== id))  // Remove item
+setItems([...items, newItem])
+setItems(items.filter(i => i.id !== id))
 ```
 
 ---
 
 ## useEffect Patterns
 
-### Run Once (on mount)
 ```tsx
+// Run once on mount
 useEffect(() => {
   fetchData()
-}, [])  // Empty array = only on mount
-```
+}, [])
 
-### Run on Dependency Change
-```tsx
+// Run on dependency change
 useEffect(() => {
-  console.log('products changed')
-}, [products])  // Runs when products changes
-```
+  console.log('value changed')
+}, [value])
 
-### Cleanup
-```tsx
+// Cleanup
 useEffect(() => {
   const timer = setInterval(() => {}, 1000)
-  return () => clearInterval(timer)  // Cleanup
+  return () => clearInterval(timer)
 }, [])
 ```
 
 ---
 
-## API Integration Patterns ✨ NEW
+## API Integration Patterns
 
 ### Basic Fetch
 ```tsx
@@ -141,18 +109,21 @@ const createProduct = async (product) => {
 }
 ```
 
-### DELETE Request
+### API Service Pattern
 ```tsx
-const deleteProduct = async (id) => {
-  await fetch(`http://localhost:8000/api/products/${id}`, {
-    method: 'DELETE'
-  })
+// services/api.ts
+export const productApi = {
+  getAll: () => fetchApi<Product[]>('/products'),
+  getById: (id) => fetchApi<Product>(`/products/${id}`),
+  create: (data) => fetchApi<Product>('/products', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id, data) => fetchApi<Product>(`/products/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (id) => fetchApi<void>(`/products/${id}`, { method: 'DELETE' }),
 }
 ```
 
 ---
 
-## Loading & Error States ✨ NEW
+## Loading & Error States
 
 ```tsx
 function ProductsPage() {
@@ -172,14 +143,8 @@ function ProductsPage() {
 
 ---
 
-## useReducer Patterns
+## useReducer Pattern
 
-### When to Use
-- Multiple related state values
-- Complex state logic
-- Many actions on same state
-
-### Basic Pattern
 ```tsx
 type Action =
   | { type: 'ADD_ITEM'; payload: Item }
@@ -203,26 +168,22 @@ dispatch({ type: 'ADD_ITEM', payload: newItem })
 
 ---
 
-## useRef Patterns
+## useRef Pattern
 
-### DOM Reference
 ```tsx
+// DOM Reference
 const inputRef = useRef<HTMLInputElement>(null)
-
 <input ref={inputRef} />
-
 inputRef.current?.focus()
-```
 
-### Persist Value (no re-render)
-```tsx
+// Persist value (no re-render)
 const renderCount = useRef(0)
-renderCount.current += 1  // Doesn't cause re-render!
+renderCount.current += 1
 ```
 
 ---
 
-## Zod Validation Patterns
+## Zod Validation
 
 ```tsx
 import { z } from 'zod'
@@ -233,7 +194,6 @@ const schema = z.object({
   price: z.string().refine(v => Number(v) > 0, 'Must be positive'),
 })
 
-// Validate
 const result = schema.safeParse(data)
 if (result.success) {
   console.log(result.data)
@@ -254,8 +214,6 @@ if (result.success) {
 | `@PathVariable` | Path parameter | `/products/{id}` |
 | `@RequestBody` | Pydantic model | Auto-validated |
 | `@Valid` | Automatic | Pydantic validates |
-| `ResponseEntity` | Return value | Auto JSON |
-| `@Service` | Function | Business logic |
 | `throw Exception` | `raise HTTPException` | Error handling |
 
 ---
@@ -268,18 +226,15 @@ if (result.success) {
 | Hibernate/JPA | SQLAlchemy | ORM |
 | `@Entity` | `class Model(Base)` | DB table |
 | `@Id @GeneratedValue` | `Column(primary_key=True)` | Auto ID |
-| `@Column` | `Column()` | Table column |
 | `JpaRepository` | `db.query()` | DB operations |
 | `@Autowired` | `Depends(get_db)` | Inject session |
 | `@Transactional` | `db.commit()` | Save changes |
-| `data.sql` | `seed_data()` | Initial data |
 
 ---
 
-## SQLAlchemy Model Pattern
+## SQLAlchemy Model
 
 ```python
-# Like @Entity in JPA
 class ProductModel(Base):
     __tablename__ = "products"
     
@@ -294,16 +249,13 @@ class ProductModel(Base):
 @Entity
 @Table(name = "products")
 public class Product {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id @GeneratedValue
     private Long id;
     
-    @Column(nullable = false, length = 100)
+    @Column(nullable = false)
     private String name;
     
-    @Column(nullable = false)
     private Double price;
-    
-    @Column
     private Integer stock = 0;
 }
 ```
@@ -313,17 +265,9 @@ public class Product {
 ## Repository Pattern
 
 ```python
-# Python/FastAPI
 @router.get("/products")
 def get_all(db: Session = Depends(get_db)):
     return db.query(ProductModel).all()
-
-@router.get("/products/{id}")
-def get_by_id(id: int, db: Session = Depends(get_db)):
-    product = db.query(ProductModel).filter(ProductModel.id == id).first()
-    if not product:
-        raise HTTPException(status_code=404, detail="Not found")
-    return product
 
 @router.post("/products")
 def create(product: ProductCreate, db: Session = Depends(get_db)):
@@ -334,124 +278,196 @@ def create(product: ProductCreate, db: Session = Depends(get_db)):
     return db_product
 ```
 
-**Java Equivalent:**
-```java
-@GetMapping("/products")
-public List<Product> getAll() {
-    return repository.findAll();
-}
+---
 
-@GetMapping("/products/{id}")
-public Product getById(@PathVariable Long id) {
-    return repository.findById(id)
-        .orElseThrow(() -> new NotFoundException("Not found"));
-}
+## Password Hashing
 
-@PostMapping("/products")
-public Product create(@RequestBody ProductDTO dto) {
-    Product product = new Product();
-    BeanUtils.copyProperties(dto, product);
-    return repository.save(product);
-}
+```python
+import hashlib
+
+def hash_password(password: str) -> str:
+    return hashlib.sha256(password.encode()).hexdigest()
+
+# Create user with hashed password
+db_user = UserModel(
+    username=user.username,
+    password_hash=hash_password(user.password)
+)
 ```
 
 ---
 
-## Pydantic vs Bean Validation
+## JWT Authentication ✨
+
+### Token Creation
+```python
+import jwt
+from datetime import datetime, timedelta
+
+SECRET_KEY = "your-secret-key"
+
+def create_token(user_id: int, username: str, role: str) -> str:
+    payload = {
+        "sub": str(user_id),
+        "username": username,
+        "role": role,
+        "exp": datetime.utcnow() + timedelta(hours=24)
+    }
+    return jwt.encode(payload, SECRET_KEY, algorithm="HS256")
+```
+
+### Token Validation
+```python
+def get_current_user(token: str = Depends(oauth2_scheme)):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        return payload
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(401, "Token expired")
+    except jwt.InvalidTokenError:
+        raise HTTPException(401, "Invalid token")
+```
+
+### Java ↔ Python Auth Comparison
+| Java/Spring | Python/FastAPI |
+|-------------|----------------|
+| JwtFilter | Depends(get_current_user) |
+| JwtService | jwt.encode() / jwt.decode() |
+| BCryptPasswordEncoder | hashlib.sha256 |
+| SecurityContextHolder | Return from dependency |
+| @PreAuthorize | Manual role check |
+
+---
+
+## Pydantic Validation
 
 ```python
-# Python/Pydantic
 class ProductCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
     price: float = Field(..., gt=0)
     stock: int = Field(..., ge=0)
 ```
 
-```java
-// Java/Bean Validation
-public class ProductDTO {
-    @NotBlank @Size(min=1, max=100)
-    private String name;
-    
-    @NotNull @Positive
-    private Double price;
-    
-    @NotNull @PositiveOrZero
-    private Integer stock;
+---
+
+# Part 3: Full-Stack Flow
+
+## Data Flow Diagram
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  React Component                                                │
+│  const { data } = await fetch('/api/products')                  │
+└─────────────────────────────┬───────────────────────────────────┘
+                              │ HTTP Request + JWT Token
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  FastAPI Router                                                 │
+│  @router.get("/products")                                       │
+│  def get_products(db: Session = Depends(get_db)):              │
+└─────────────────────────────┬───────────────────────────────────┘
+                              │ SQLAlchemy Query
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  SQLite Database                                                │
+│  SELECT * FROM products                                         │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Module Structure Pattern
+
+### Backend (FastAPI)
+```
+models/
+├── user.py          # Pydantic schema (API validation)
+└── user_model.py    # SQLAlchemy model (database)
+
+routers/
+├── users.py         # CRUD endpoints
+└── auth.py          # Authentication endpoints
+```
+
+### Frontend (React)
+```
+types/
+└── index.ts         # TypeScript types
+
+services/
+└── api.ts           # API calls
+
+stores/
+└── authStore.ts     # Zustand auth state
+
+pages/
+├── LoginPage.tsx    # Login form
+└── User/
+    ├── UsersPage.tsx
+    └── UsersGridPage.tsx  # AG Grid version
+```
+
+---
+
+## Authentication Flow
+
+```
+Login → Token → Store → API Calls → Validate
+  │       │       │         │          │
+  │       │       │         │          └── Backend verifies
+  │       │       │         └── Authorization header
+  │       │       └── Zustand persist → localStorage
+  │       └── Backend returns JWT
+  └── POST /auth/login
+```
+
+---
+
+## AG Grid Patterns ✨
+
+### Basic Setup (v35+)
+```tsx
+import { AgGridReact } from 'ag-grid-react'
+import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community'
+import type { ColDef } from 'ag-grid-community'
+
+ModuleRegistry.registerModules([AllCommunityModule])
+
+const columnDefs: ColDef[] = [
+  { field: 'name', headerName: 'Name', flex: 1 },
+  { field: 'price', valueFormatter: p => `$${p.value}` },
+]
+
+<div style={{ height: 500 }}>
+  <AgGridReact
+    rowData={data}
+    columnDefs={columnDefs}
+    pagination={true}
+  />
+</div>
+```
+
+### Conditional Cell Styling
+```tsx
+{
+  field: 'stock',
+  cellStyle: (params) => {
+    if (params.value <= 0) return { color: 'red' }
+    if (params.value < 10) return { color: 'orange' }
+    return { color: 'green' }
+  }
 }
 ```
 
----
+### Custom Cell Renderer
+```tsx
+function ActionRenderer(props: ICellRendererParams<Product>) {
+  return (
+    <button onClick={() => handleEdit(props.data)}>Edit</button>
+  )
+}
 
-## Database Session (Dependency Injection)
-
-```python
-# Python - Like @Autowired EntityManager
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-# Usage
-@router.get("/products")
-def get_products(db: Session = Depends(get_db)):
-    return db.query(ProductModel).all()
-```
-
-```java
-// Java Equivalent
-@Autowired
-private EntityManager entityManager;
-
-// Or with Spring Data
-@Autowired
-private ProductRepository repository;
-```
-
----
-
-## Common Mistakes ❌
-
-### React
-| Mistake | Fix |
-|---------|-----|
-| `class="..."` | `className="..."` |
-| Forgetting key | `key={item.id}` |
-| Mutating state directly | Use setter with spread |
-| Not handling loading/error | Add states |
-
-### FastAPI
-| Mistake | Fix |
-|---------|-----|
-| Forgetting `db.commit()` | Always commit after changes |
-| Not refreshing after insert | `db.refresh(item)` |
-| Wrong status code | Use `status.HTTP_201_CREATED` |
-| Missing CORS | Add CORSMiddleware |
-
----
-
-## Full-Stack Data Flow
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│  React Component                                            │
-│  const { data } = await fetch('/api/products')              │
-└─────────────────────────┬───────────────────────────────────┘
-                          │ HTTP Request
-                          ▼
-┌─────────────────────────────────────────────────────────────┐
-│  FastAPI Router                                             │
-│  @router.get("/products")                                   │
-│  def get_products(db: Session = Depends(get_db)):          │
-└─────────────────────────┬───────────────────────────────────┘
-                          │ SQLAlchemy Query
-                          ▼
-┌─────────────────────────────────────────────────────────────┐
-│  SQLite Database                                            │
-│  SELECT * FROM products                                     │
-└─────────────────────────────────────────────────────────────┘
+{ cellRenderer: ActionRenderer }
 ```
 
 ---
@@ -464,3 +480,30 @@ private ProductRepository repository;
 | FastAPI Backend | http://localhost:8000 |
 | API Docs (Swagger) | http://localhost:8000/api/docs |
 | Database File | `data/erp.db` |
+
+---
+
+## Common Mistakes ❌
+
+### React
+| Mistake | Fix |
+|---------|-----|
+| `class="..."` | `className="..."` |
+| Forgetting key | `key={item.id}` |
+| Mutating state | Use setter with spread |
+| Not handling loading | Add loading state |
+
+### FastAPI
+| Mistake | Fix |
+|---------|-----|
+| Forgetting `db.commit()` | Always commit |
+| Not refreshing after insert | `db.refresh(item)` |
+| Wrong status code | Use `status.HTTP_201_CREATED` |
+| Missing CORS | Add CORSMiddleware |
+
+### AG Grid
+| Mistake | Fix |
+|---------|-----|
+| Missing module registration | `ModuleRegistry.registerModules([AllCommunityModule])` |
+| Wrong import | Use `import type { ColDef }` |
+| No height on container | Add `style={{ height: 500 }}` |

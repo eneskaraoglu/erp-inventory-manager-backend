@@ -1,7 +1,7 @@
 # Backend Setup Session - FastAPI
-**Date:** January 10, 2026 (Initial) | January 11, 2026 (SQLite Migration)
-**Duration:** ~1 hour (Initial) + ~30 min (Migration)
-**Technology:** Python + FastAPI + SQLAlchemy + SQLite
+**Date:** January 10, 2026 (Initial) | January 11-12, 2026 (Enhancements)
+**Duration:** ~3 hours total
+**Technology:** Python + FastAPI + SQLAlchemy + SQLite + JWT
 
 ---
 
@@ -15,7 +15,9 @@
 - [x] Enable CORS for React frontend
 - [x] Test all endpoints
 - [x] Generate auto documentation
-- [x] **Migrate to SQLite database** ✨ NEW
+- [x] **Migrate to SQLite database** ✨
+- [x] **Add User module with password hashing** ✨
+- [x] **Add JWT Authentication** ✨
 
 ---
 
@@ -47,6 +49,7 @@ Coming from **Java** background, wanted to learn **Python** for:
 | Pydantic | 2.10.3 | Data validation | Bean Validation |
 | SQLAlchemy | 2.0.36 | ORM | Hibernate/JPA |
 | SQLite | Built-in | Database | H2 Database |
+| PyJWT | 2.x | JWT tokens | jjwt / Spring Security |
 
 ---
 
@@ -57,24 +60,28 @@ erp-inventory-manager-backend/
 ├── app/
 │   ├── __init__.py
 │   ├── main.py                    # FastAPI app, CORS, routes, DB init
-│   ├── database.py                # ✨ NEW - Database connection
+│   ├── database.py                # Database connection
 │   ├── models/
 │   │   ├── __init__.py
 │   │   ├── product.py             # Pydantic schemas (validation)
-│   │   ├── customer.py            # Pydantic schemas (validation)
-│   │   ├── product_model.py       # ✨ NEW - SQLAlchemy model
-│   │   └── customer_model.py      # ✨ NEW - SQLAlchemy model
+│   │   ├── customer.py            # Pydantic schemas
+│   │   ├── user.py                # ✨ User Pydantic schemas
+│   │   ├── product_model.py       # SQLAlchemy model
+│   │   ├── customer_model.py      # SQLAlchemy model
+│   │   └── user_model.py          # ✨ User SQLAlchemy model
 │   └── routers/
 │       ├── __init__.py
-│       ├── products.py            # Products CRUD (uses DB)
-│       └── customers.py           # Customers CRUD (uses DB)
-├── data/                          # ✨ NEW - Database folder
-│   └── erp.db                     # ✨ SQLite database file
+│       ├── products.py            # Products CRUD
+│       ├── customers.py           # Customers CRUD
+│       ├── users.py               # ✨ Users CRUD
+│       └── auth.py                # ✨ JWT Authentication
+├── data/
+│   └── erp.db                     # SQLite database file
 ├── docs/
 │   ├── BACKEND_SESSION.md         # This file
 │   ├── CONCEPTS.md
 │   └── FUNDAMENTALS_SUMMARY.md
-├── requirements.txt               # Python dependencies (+ sqlalchemy)
+├── requirements.txt               # Python dependencies
 ├── run.py                         # Dev server runner
 ├── .gitignore
 ├── README.md
@@ -83,61 +90,123 @@ erp-inventory-manager-backend/
 
 ---
 
-## Database Migration (SQLite) ✨ NEW
+## APIs Built
 
-### Why SQLite?
+### Products API ✅
 
-| Feature | In-Memory (Before) | SQLite (After) |
-|---------|-------------------|----------------|
-| Data persistence | ❌ Lost on restart | ✅ Saved to file |
-| Real database | ❌ Just Python lists | ✅ SQL database |
-| Production-like | ❌ Not realistic | ✅ Same patterns |
-| Java equivalent | - | H2 Database |
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| GET | `/api/products` | Get all products | Required |
+| GET | `/api/products/{id}` | Get single product | Required |
+| POST | `/api/products` | Create new product | Required |
+| PUT | `/api/products/{id}` | Update product | Required |
+| DELETE | `/api/products/{id}` | Delete product | Required |
 
-### Java ↔ Python Comparison
+### Customers API ✅
+
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| GET | `/api/customers` | Get all customers | Required |
+| GET | `/api/customers/{id}` | Get single customer | Required |
+| POST | `/api/customers` | Create new customer | Required |
+| PUT | `/api/customers/{id}` | Update customer | Required |
+| DELETE | `/api/customers/{id}` | Delete customer | Required |
+
+### Users API ✅
+
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| GET | `/api/users` | Get all users | Admin/Manager |
+| GET | `/api/users/{id}` | Get single user | Admin/Manager |
+| POST | `/api/users` | Create new user | Admin |
+| PUT | `/api/users/{id}` | Update user | Admin |
+| DELETE | `/api/users/{id}` | Delete user | Admin |
+
+### Auth API ✅
+
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| POST | `/api/auth/login` | Login, get JWT token | Public |
+| GET | `/api/auth/me` | Get current user info | Required |
+
+---
+
+## Authentication (JWT) ✨
+
+### Flow
+```
+1. POST /auth/login { username, password }
+2. Backend validates credentials
+3. Returns { access_token, user }
+4. Frontend stores token in localStorage
+5. All requests include: Authorization: Bearer <token>
+6. Backend validates token on each request
+```
+
+### Java ↔ Python Auth Comparison
 
 | Concept | Java/Spring | Python/FastAPI |
 |---------|-------------|----------------|
-| Database | H2 / MySQL | SQLite / PostgreSQL |
-| ORM | JPA/Hibernate | SQLAlchemy |
-| Entity | `@Entity class` | `class Model(Base)` |
-| Repository | `JpaRepository` | `db.query(Model)` |
-| Transaction | `@Transactional` | `db.commit()` |
-| Session | `EntityManager` | `Session` |
-| DI | `@Autowired` | `Depends(get_db)` |
-| Seed data | `data.sql` | `seed_data()` |
+| Auth Filter | OncePerRequestFilter | Depends() |
+| Token Creation | JwtService | jwt.encode() |
+| Token Validation | JwtFilter | jwt.decode() |
+| Password Hash | BCryptPasswordEncoder | hashlib.sha256 |
+| User Details | UserDetailsService | get_current_user() |
+| Security Config | SecurityFilterChain | Manual in route |
 
-### Database Configuration
+### Sample Users (Seeded)
+
+| Username | Password | Role |
+|----------|----------|------|
+| admin | admin123 | admin |
+| manager | manager123 | manager |
+| johndoe | password123 | user |
+
+---
+
+## Database Models
+
+### User Model (with Password Hashing)
 
 ```python
-# database.py - Like application.properties in Spring
-
-# SQLite file path (like jdbc:h2:file:./data/erp)
-DATABASE_URL = "sqlite:///data/erp.db"
-
-# Create engine (like DataSource)
-engine = create_engine(DATABASE_URL)
-
-# Session factory (like EntityManagerFactory)
-SessionLocal = sessionmaker(bind=engine)
-
-# Base class for models (like @MappedSuperclass)
-Base = declarative_base()
+class UserModel(Base):
+    __tablename__ = "users"
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    username = Column(String(50), unique=True, nullable=False)
+    email = Column(String(100), unique=True, nullable=False)
+    password_hash = Column(String(64), nullable=False)  # SHA256
+    full_name = Column(String(100), nullable=True)
+    is_active = Column(Boolean, default=True)
+    role = Column(String(20), default="user")  # admin, manager, user
+    created_at = Column(DateTime, default=datetime.utcnow)
 ```
 
-### Entity Model Example
+### Password Hashing
+
+```python
+import hashlib
+
+def hash_password(password: str) -> str:
+    return hashlib.sha256(password.encode()).hexdigest()
+
+def verify_password(password: str, hashed: str) -> bool:
+    return hash_password(password) == hashed
+```
+
+---
+
+## Java ↔ Python Comparison
+
+### Entity/Model
 
 ```python
 # Python/SQLAlchemy
 class ProductModel(Base):
     __tablename__ = "products"
-    
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(100), nullable=False)
-    description = Column(String(500), nullable=True)
     price = Column(Float, nullable=False)
-    stock = Column(Integer, nullable=False, default=0)
-    category = Column(String(50), nullable=True)
 ```
 
 ```java
@@ -145,159 +214,53 @@ class ProductModel(Base):
 @Entity
 @Table(name = "products")
 public class Product {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id @GeneratedValue
     private Long id;
     
-    @Column(nullable = false, length = 100)
+    @Column(nullable = false)
     private String name;
     
-    @Column(length = 500)
-    private String description;
-    
-    @Column(nullable = false)
     private Double price;
-    
-    @Column(nullable = false)
-    private Integer stock = 0;
-    
-    @Column(length = 50)
-    private String category;
 }
 ```
 
 ### Repository Pattern
 
 ```python
-# Python/FastAPI - In router
+# Python/FastAPI
 @router.get("/products")
-def get_all_products(db: Session = Depends(get_db)):
+def get_all(db: Session = Depends(get_db)):
     return db.query(ProductModel).all()
-
-@router.post("/products")
-def create_product(product: ProductCreate, db: Session = Depends(get_db)):
-    db_product = ProductModel(**product.model_dump())
-    db.add(db_product)
-    db.commit()
-    db.refresh(db_product)
-    return db_product
 ```
 
 ```java
-// Java/Spring Equivalent
+// Java/Spring
 @GetMapping("/products")
-public List<Product> getAllProducts() {
-    return productRepository.findAll();
-}
-
-@PostMapping("/products")
-public Product createProduct(@RequestBody ProductDTO dto) {
-    Product product = new Product();
-    BeanUtils.copyProperties(dto, product);
-    return productRepository.save(product);
+public List<Product> getAll() {
+    return repository.findAll();
 }
 ```
 
----
-
-## APIs Built
-
-### Products API ✅
-
-| Method | Endpoint | Description | Status Code |
-|--------|----------|-------------|-------------|
-| GET | `/api/products` | Get all products | 200 |
-| GET | `/api/products/{id}` | Get single product | 200 / 404 |
-| POST | `/api/products` | Create new product | 201 |
-| PUT | `/api/products/{id}` | Update product | 200 / 404 |
-| DELETE | `/api/products/{id}` | Delete product | 204 / 404 |
-
-### Customers API ✅
-
-| Method | Endpoint | Description | Status Code |
-|--------|----------|-------------|-------------|
-| GET | `/api/customers` | Get all customers | 200 |
-| GET | `/api/customers/{id}` | Get single customer | 200 / 404 |
-| POST | `/api/customers` | Create new customer | 201 / 400 |
-| PUT | `/api/customers/{id}` | Update customer | 200 / 404 / 400 |
-| DELETE | `/api/customers/{id}` | Delete customer | 204 / 404 |
-
----
-
-## Data Models
-
-### Pydantic Schemas (API Validation)
+### Dependency Injection
 
 ```python
-# For API request/response validation
-class Product(BaseModel):
-    id: int
-    name: str           # 1-100 chars, required
-    description: str    # 0-500 chars, optional
-    price: float        # Must be positive
-    stock: int          # Must be >= 0
-    category: str       # 0-50 chars, optional
+# Python - Depends()
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
-class Customer(BaseModel):
-    id: int
-    name: str           # 1-100 chars, required
-    email: EmailStr     # Valid email format
-    phone: str          # 0-20 chars, optional
-    address: str        # 0-200 chars, optional
-    company: str        # 0-100 chars, optional
+@router.get("/")
+def endpoint(db: Session = Depends(get_db)):
+    ...
 ```
 
-### SQLAlchemy Models (Database)
-
-```python
-# For database table mapping
-class ProductModel(Base):
-    __tablename__ = "products"
-    id = Column(Integer, primary_key=True)
-    name = Column(String(100), nullable=False)
-    # ... other columns
-
-class CustomerModel(Base):
-    __tablename__ = "customers"
-    id = Column(Integer, primary_key=True)
-    name = Column(String(100), nullable=False)
-    email = Column(String(100), unique=True)
-    # ... other columns
-```
-
----
-
-## Database Features
-
-### Auto Table Creation
-```python
-# Like Hibernate's hbm2ddl.auto=update
-Base.metadata.create_all(bind=engine)
-```
-
-### Seed Data (Initial Data)
-```python
-# Like Spring's data.sql or CommandLineRunner
-def seed_data():
-    if db.query(ProductModel).count() == 0:
-        products = [
-            ProductModel(name="Laptop", price=999.99, ...),
-            ProductModel(name="Mouse", price=29.99, ...),
-        ]
-        db.add_all(products)
-        db.commit()
-```
-
-### Startup Lifecycle
-```python
-# Like @PostConstruct in Spring
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Startup
-    init_db()      # Create tables
-    seed_data()    # Add initial data
-    yield
-    # Shutdown
+```java
+// Java - @Autowired
+@Autowired
+private ProductRepository repository;
 ```
 
 ---
@@ -305,21 +268,21 @@ async def lifespan(app: FastAPI):
 ## Commands Reference
 
 ```bash
-# Install dependencies (including SQLAlchemy)
+# Install dependencies
 pip install -r requirements.txt
-
-# Or install SQLAlchemy separately
-pip install sqlalchemy
 
 # Start development server
 python run.py
 
-# Database file location
+# Server runs at
+http://127.0.0.1:8000
+
+# API Documentation
+http://127.0.0.1:8000/api/docs
+
+# Database file
 data/erp.db
 ```
-
-**Server URL:** http://127.0.0.1:8000
-**API Docs:** http://127.0.0.1:8000/api/docs
 
 ---
 
@@ -327,114 +290,11 @@ data/erp.db
 
 ```
 🚀 Starting ERP Inventory Manager API...
-✅ Database initialized at: D:\CODE-BASE\erp-inventory-manager-backend\data\erp.db
-📦 Seeding products...
-✅ Added 4 products
-👥 Seeding customers...
-✅ Added 3 customers
-INFO:     Started server process
+✅ Database initialized at: data/erp.db
+📦 Seeding products... ✅ Added 4 products
+👥 Seeding customers... ✅ Added 3 customers
+👤 Seeding users... ✅ Added 3 users
 INFO:     Uvicorn running on http://127.0.0.1:8000
-```
-
----
-
-## Sample Data (Seeded Automatically)
-
-### Products (4 items)
-| ID | Name | Price | Stock | Category |
-|----|------|-------|-------|----------|
-| 1 | Laptop | $999.99 | 50 | Electronics |
-| 2 | Mouse | $29.99 | 100 | Accessories |
-| 3 | Keyboard | $89.99 | 75 | Accessories |
-| 4 | Monitor | $449.99 | 30 | Electronics |
-
-### Customers (3 items)
-| ID | Name | Email | Company |
-|----|------|-------|---------|
-| 1 | John Doe | john@example.com | Acme Corp |
-| 2 | Jane Smith | jane@example.com | Tech Solutions |
-| 3 | Bob Johnson | bob@example.com | Global Industries |
-
----
-
-## Testing the API
-
-### Via Swagger UI (Recommended)
-1. Start server: `python run.py`
-2. Open: http://127.0.0.1:8000/api/docs
-3. Click any endpoint
-4. Click "Try it out"
-5. Fill in data
-6. Click "Execute"
-
-### Via curl
-
-```bash
-# Get all products
-curl http://127.0.0.1:8000/api/products
-
-# Create product
-curl -X POST http://127.0.0.1:8000/api/products \
-  -H "Content-Type: application/json" \
-  -d '{"name":"Webcam","price":89.99,"stock":25,"category":"Accessories"}'
-
-# Update product
-curl -X PUT http://127.0.0.1:8000/api/products/1 \
-  -H "Content-Type: application/json" \
-  -d '{"price":899.99}'
-
-# Delete product
-curl -X DELETE http://127.0.0.1:8000/api/products/5
-```
-
-### Test Data Persistence
-1. Add a new product via API
-2. Stop the server (Ctrl+C)
-3. Start the server again
-4. **Your data is still there!** ✅
-
----
-
-## Files Created/Modified
-
-### Initial Setup (Jan 10)
-```
-✨ NEW FILES:
-├── app/
-│   ├── __init__.py
-│   ├── main.py
-│   ├── models/
-│   │   ├── __init__.py
-│   │   ├── product.py
-│   │   └── customer.py
-│   └── routers/
-│       ├── __init__.py
-│       ├── products.py
-│       └── customers.py
-├── requirements.txt
-├── run.py
-└── docs/BACKEND_SESSION.md
-```
-
-### SQLite Migration (Jan 11)
-```
-✨ NEW FILES:
-├── app/
-│   ├── database.py              # DB connection & session
-│   └── models/
-│       ├── product_model.py     # SQLAlchemy Product
-│       └── customer_model.py    # SQLAlchemy Customer
-└── data/
-    └── erp.db                   # SQLite database file
-
-📝 MODIFIED FILES:
-├── app/
-│   ├── main.py                  # Added lifespan, init_db, seed_data
-│   ├── models/__init__.py       # Export new models
-│   └── routers/
-│       ├── products.py          # Use db session
-│       └── customers.py         # Use db session
-└── requirements.txt             # Added sqlalchemy
 ```
 
 ---
@@ -445,25 +305,32 @@ curl -X DELETE http://127.0.0.1:8000/api/products/5
 ┌─────────────────────────────────────────────────────────────┐
 │                     React Frontend                          │
 │                  (localhost:5173)                           │
+│   - Login Page → Auth Store (Zustand)                      │
+│   - Protected Routes                                        │
+│   - AG Grid Tables                                          │
 └─────────────────────────┬───────────────────────────────────┘
-                          │ HTTP (fetch)
+                          │ HTTP + JWT Token
                           ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                   FastAPI Backend                           │
 │                  (localhost:8000)                           │
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐ │
 │  │   Routers   │→ │  Pydantic   │→ │    SQLAlchemy       │ │
-│  │ (Endpoints) │  │  (Schemas)  │  │    (Models)         │ │
-│  └─────────────┘  └─────────────┘  └──────────┬──────────┘ │
-└────────────────────────────────────────────────┼────────────┘
-                                                 │ SQL
-                                                 ▼
-                                    ┌─────────────────────────┐
-                                    │   SQLite Database       │
-                                    │   (data/erp.db)         │
-                                    │   - products table      │
-                                    │   - customers table     │
-                                    └─────────────────────────┘
+│  │ - products  │  │  (Schemas)  │  │    (Models)         │ │
+│  │ - customers │  │             │  │                     │ │
+│  │ - users     │  └─────────────┘  └──────────┬──────────┘ │
+│  │ - auth      │                              │            │
+│  └─────────────┘                              │            │
+└───────────────────────────────────────────────┼────────────┘
+                                                │ SQL
+                                                ▼
+                                   ┌─────────────────────────┐
+                                   │   SQLite Database       │
+                                   │   (data/erp.db)         │
+                                   │   - products            │
+                                   │   - customers           │
+                                   │   - users               │
+                                   └─────────────────────────┘
 ```
 
 ---
@@ -474,30 +341,57 @@ curl -X DELETE http://127.0.0.1:8000/api/products/5
 
 | Feature | Status | Description |
 |---------|--------|-------------|
-| REST API | ✅ | 10 endpoints (CRUD) |
-| Validation | ✅ | Pydantic schemas |
+| Products API | ✅ | Full CRUD (5 endpoints) |
+| Customers API | ✅ | Full CRUD (5 endpoints) |
+| Users API | ✅ | Full CRUD (5 endpoints) |
+| Auth API | ✅ | Login + JWT (2 endpoints) |
 | Database | ✅ | SQLite + SQLAlchemy |
-| Persistence | ✅ | Data survives restart |
+| Password Hashing | ✅ | SHA256 |
+| JWT Auth | ✅ | Token-based auth |
+| Role-based Access | ✅ | admin/manager/user |
 | CORS | ✅ | React can connect |
 | Auto Docs | ✅ | Swagger UI |
-| Seed Data | ✅ | Initial products/customers |
+| Seed Data | ✅ | Initial data on startup |
 
-### Key Learnings
+### Total Endpoints: 17
 
-1. **Pydantic** = API validation (like Bean Validation)
-2. **SQLAlchemy** = ORM (like Hibernate)
-3. **SQLite** = Embedded database (like H2)
-4. **Depends()** = Dependency injection (like @Autowired)
-5. **lifespan** = Startup/shutdown events (like @PostConstruct)
+| Module | Endpoints |
+|--------|-----------|
+| Products | 5 |
+| Customers | 5 |
+| Users | 5 |
+| Auth | 2 |
+
+---
+
+## Frontend Integration
+
+The React frontend connects to this backend with:
+
+| Frontend | Backend |
+|----------|---------|
+| React Query | Products API |
+| Context API | Customers API |
+| Context API | Users API |
+| Zustand (authStore) | Auth API |
+| AG Grid | All APIs |
 
 ---
 
 ## Total Learning Progress
 
 ```
-React Frontend:        [████████░░] 60% (Phase 1-2 Complete, API Connected)
-Python Backend:        [████████░░] 70% (API + Database Complete)
-Full-Stack:            [███████░░░] 65%
+React Frontend:        [██████████] 100% ✅
+Python Backend:        [██████████] 100% ✅
+Full-Stack:            [██████████] 100% ✅
 ```
 
-**Backend is now production-ready with persistent storage!** 🚀
+**Full-stack ERP system complete!** 🚀
+
+---
+
+## Quick Links
+
+- Frontend Docs: `erp-inventory-manager/docs/`
+- Backend Docs: `erp-inventory-manager-backend/docs/`
+- API Docs: http://localhost:8000/api/docs
