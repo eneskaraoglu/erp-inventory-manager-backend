@@ -1,0 +1,65 @@
+# Docker Compose - Full Stack (Backend + Frontend)
+# 
+# This file runs BOTH backend and frontend together.
+# Frontend project must be in ../erp-inventory-manager/
+#
+# Usage:
+#   docker-compose -f docker-compose.full.yml up -d        # Start all
+#   docker-compose -f docker-compose.full.yml down         # Stop all
+#   docker-compose -f docker-compose.full.yml logs -f      # View logs
+
+version: '3.8'
+
+services:
+  # ============================================
+  # Backend Service - FastAPI
+  # ============================================
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: erp-backend
+    ports:
+      - "8001:8001"
+    volumes:
+      - backend_data:/app/data
+    environment:
+      - PYTHONUNBUFFERED=1
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - erp-network
+
+  # ============================================
+  # Frontend Service - React + Nginx
+  # ============================================
+  frontend:
+    build:
+      context: ../erp-inventory-manager
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: http://localhost:8001/api
+        VITE_APP_NAME: "ERP Inventory Manager"
+    container_name: erp-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - erp-network
+
+volumes:
+  backend_data:
+    name: erp-backend-data
+
+networks:
+  erp-network:
+    name: erp-network
+    driver: bridge

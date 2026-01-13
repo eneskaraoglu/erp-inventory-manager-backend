@@ -1,0 +1,36 @@
+# Docker ignore file - like .gitignore but for Docker
+# These files won't be copied into the Docker image
+
+# Virtual environments
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Local data (we'll use Docker volumes for persistence)
+data/
+
+# Documentation
+docs/
+*.md
+!README.md
+
+# Claude files
+.claude/
+
+# Test files
+tests/
+test_*.py
+*_test.py

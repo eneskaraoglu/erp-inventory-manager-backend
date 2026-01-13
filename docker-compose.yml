@@ -1,0 +1,33 @@
+# Docker Compose - Backend Only
+# 
+# Usage:
+#   docker-compose up -d        # Start backend
+#   docker-compose down         # Stop backend
+#   docker-compose logs -f      # View logs
+
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: erp-backend
+    ports:
+      - "8001:8001"
+    volumes:
+      # Persist SQLite database outside container
+      - backend_data:/app/data
+    environment:
+      - PYTHONUNBUFFERED=1
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
+volumes:
+  backend_data:
+    name: erp-backend-data
