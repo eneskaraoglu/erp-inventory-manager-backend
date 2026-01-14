@@ -1,50 +1,33 @@
 # Docker Compose - Production Deployment
-# 
-# Use this file on ANY computer to run the application
-# Just change 'yourusername' to your Docker Hub username
+# Works on ANY machine - no IP address needed!
 #
 # Usage:
-#   1. Copy this file to target computer
-#   2. Run: docker-compose -f docker-compose.prod.yml up -d
-#   3. Access: http://localhost (frontend) or http://localhost:8001 (API)
+#   docker-compose pull
+#   docker-compose up -d
 
 version: '3.8'
 
 services:
-  # ============================================
-  # Backend - Pull from Docker Hub
-  # ============================================
   backend:
-    image: yourusername/erp-backend:latest
+    image: eneskaraoglu/erp-backend:latest
     container_name: erp-backend
     ports:
       - "8001:8001"
     volumes:
-      # Persist database
       - backend_data:/app/data
     environment:
       - PYTHONUNBUFFERED=1
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8001/api/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
     restart: unless-stopped
     networks:
       - erp-network
 
-  # ============================================
-  # Frontend - Pull from Docker Hub
-  # ============================================
   frontend:
-    image: yourusername/erp-frontend:latest
+    image: eneskaraoglu/erp-frontend:latest
     container_name: erp-frontend
     ports:
-      - "80:80"
+      - "3000:80"
     depends_on:
-      backend:
-        condition: service_healthy
+      - backend
     restart: unless-stopped
     networks:
       - erp-network
@@ -55,5 +38,4 @@ volumes:
 
 networks:
   erp-network:
-    name: erp-network
     driver: bridge
