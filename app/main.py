@@ -102,22 +102,16 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS middleware - Allow React frontend to connect
+# ============================================
+# CORS middleware - MUST be added BEFORE routes!
+# Allow React frontend to connect
+# ============================================
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",  # Vite default
-        "http://localhost:3000",  # Create React App default
-        "http://127.0.0.1:5173",
-        "http://127.0.0.1:3000",
-        "http://localhost",       # Docker Nginx (port 80)
-        "http://localhost:80",    # Docker Nginx explicit
-        "http://127.0.0.1",       # Docker Nginx
-        "http://127.0.0.1:80",    # Docker Nginx explicit
-    ],
+    allow_origins=["*"],  # Allow all origins for development
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["*"],  # Allow all methods
+    allow_headers=["*"],  # Allow all headers
 )
 
 # Include routers

@@ -4,6 +4,8 @@
 #   docker-compose up -d        # Start backend
 #   docker-compose down         # Stop backend
 #   docker-compose logs -f      # View logs
+#
+# Creates shared network "erp-network" for frontend to connect
 
 version: '3.8'
 
@@ -27,7 +29,15 @@ services:
       retries: 3
       start_period: 10s
     restart: unless-stopped
+    networks:
+      - erp-network
 
 volumes:
   backend_data:
     name: erp-backend-data
+
+# Create network for frontend to join
+networks:
+  erp-network:
+    name: erp-network
+    driver: bridge
